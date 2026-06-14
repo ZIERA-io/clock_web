@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>시계</title>
+<style>
+  :root {
+    --ui-bg: #0e0e12;
+    --ui-surface: #18181f;
+    --ui-surface-2: #20202a;
+    --ui-border: #2c2c38;
+    --ui-text: #ededf2;
+    --ui-text-dim: #9a9aa8;
+    --ui-accent: #6c63ff;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Pretendard",
+      "Apple SD Gothic Neo", "Noto Sans KR", Roboto, sans-serif;
+    background: var(--ui-bg);
+    color: var(--ui-text);
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  /* ===== 시계 표시 영역 (항상 전체화면) ===== */
+  #stage {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: background-color .25s ease;
+  }
+  #clockWrap {
+    position: relative;
+    width: min(82vmin, 82vh);
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #analog { width: 100%; height: 100%; display: none; }
+  #digital {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+    user-select: none;
+  }
+  #digital .digiLogo { display: none; margin-bottom: 4vmin; max-width: 30vmin; max-height: 22vmin; }
+  #digital .digiLogo img { max-width: 30vmin; max-height: 22vmin; object-fit: contain; }
+  #digital .digiLogoText { font-weight: 700; margin-bottom: 3vmin; }
+  #digTime {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    line-height: 1;
+    font-size: 18vmin;
+  }
+  #digDate { margin-top: 3vmin; font-size: 4.2vmin; opacity: .82; }
+  #digTitle { margin-top: 2.5vmin; font-size: 3.4vmin; opacity: .55; letter-spacing: .04em; }
+
+  /* ===== 편집 패널 ===== */
+  #panel {
+    position: fixed;
+    top: 0; right: 0;
+    height: 100%;
+    width: 380px;
+    max-width: 92vw;
+    background: var(--ui-surface);
+    border-left: 1px solid var(--ui-border);
+    box-shadow: -20px 0 60px rgba(0,0,0,.35);
+    transform: translateX(0);
+    transition: transform .3s cubic-bezier(.22,.61,.36,1);
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+  }
+  #panel.hidden { transform: translateX(100%); }
+  .panelHead {
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid var(--ui-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .panelHead h1 { font-size: 17px; font-weight: 600; letter-spacing: .02em; }
+  .panelHead .sub { font-size: 12px; color: var(--ui-text-dim); margin-top: 2px; }
+  .panelBody { padding: 16px 20px 24px; overflow-y: auto; flex: 1; }
+  .panelBody::-webkit-scrollbar { width: 8px; }
+  .panelBody::-webkit-scrollbar-thumb { background: var(--ui-border); border-radius: 8px; }
+
+  .group { margin-bottom: 22px; }
+  .group > .label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--ui-text-dim);
+    margin-bottom: 10px;
+    display: block;
+  }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 13px; margin-bottom: 6px; color: var(--ui-text); }
+
+  .seg {
+    display: flex;
+    background: var(--ui-surface-2);
+    border: 1px solid var(--ui-border);
+    border-radius: var(--radius);
+    padding: 3px;
+    gap: 3px;
+  }
+  .seg button {
+    flex: 1;
+    border: 0;
+    background: transparent;
+    color: var(--ui-text-dim);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 9px 0;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: .15s;
+    font-family: inherit;
+  }
+  .seg button.active { background: var(--ui-accent); color: #fff; }
+
+  input[type="text"], select {
+    width: 100%;
+    background: var(--ui-surface-2);
+    border: 1px solid var(--ui-border);
+    border-radius: 10px;
+    color: var(--ui-text);
+    font-size: 13px;
+    padding: 10px 12px;
+    font-family: inherit;
+    outline: none;
+  }
+  input[type="text"]:focus, select:focus { border-color: var(--ui-accent); }
+  select { appearance: none; cursor: pointer; }
+
+  .uploadBtn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%;
+    background: var(--ui-surface-2);
+    border: 1px dashed var(--ui-border);
+    border-radius: 10px;
+    color: var(--ui-text-dim);
+    font-size: 13px;
+    padding: 14px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .uploadBtn:hover { border-color: var(--ui-accent); color: var(--ui-text); }
+
+  .colorRow { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; }
+  .colorRow span { font-size: 13px; }
+  .colorRow input[type="color"] {
+    width: 38px; height: 28px; border: 1px solid var(--ui-border);
+    border-radius: 8px; background: transparent; cursor: pointer; padding: 2px;
+  }
+
+  .toggle { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; }
+  .toggle span { font-size: 13px; }
+  .switch { position: relative; width: 42px; height: 24px; }
+  .switch input { display: none; }
+  .switch .track {
+    position: absolute; inset: 0; background: var(--ui-surface-2);
+    border: 1px solid var(--ui-border); border-radius: 999px; transition: .2s; cursor: pointer;
+  }
+  .switch .track::after {
+    content: ""; position: absolute; left: 3px; top: 3px;
+    width: 16px; height: 16px; border-radius: 50%; background: var(--ui-text-dim); transition: .2s;
+  }
+  .switch input:checked + .track { background: var(--ui-accent); border-color: var(--ui-accent); }
+  .switch input:checked + .track::after { left: 21px; background: #fff; }
+
+  .themeRow { display: flex; gap: 8px; flex-wrap: wrap; }
+  .swatch {
+    width: 34px; height: 34px; border-radius: 9px; cursor: pointer;
+    border: 2px solid transparent; transition: .15s;
+  }
+  .swatch:hover { transform: scale(1.08); }
+
+  .actions { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+  .btn {
+    border: 0; border-radius: 11px; font-size: 14px; font-weight: 600;
+    padding: 13px; cursor: pointer; font-family: inherit; transition: .15s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn.primary { background: var(--ui-accent); color: #fff; }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn.ghost { background: var(--ui-surface-2); color: var(--ui-text); border: 1px solid var(--ui-border); }
+  .btn.ghost:hover { border-color: var(--ui-accent); }
+
+  /* 떠있는 토글 버튼들 */
+  .fab {
+    position: fixed; z-index: 40;
+    width: 46px; height: 46px; border-radius: 50%;
+    background: rgba(24,24,31,.78);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--ui-border);
+    color: var(--ui-text);
+    cursor: pointer; font-size: 20px;
+    display: flex; align-items: center; justify-content: center;
+    transition: .2s; font-family: inherit;
+  }
+  .fab:hover { background: var(--ui-accent); border-color: var(--ui-accent); }
+  #openPanel { top: 18px; right: 18px; }
+  #fsBtn { top: 18px; right: 76px; }
+  .fab.faded { opacity: 0; pointer-events: none; }
+
+  /* 토스트 */
+  #toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--ui-text); color: var(--ui-bg);
+    padding: 11px 20px; border-radius: 999px; font-size: 13px; font-weight: 500;
+    opacity: 0; pointer-events: none; transition: .25s; z-index: 100; white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* 링크 표시 박스 */
+  #linkBox {
+    margin-top: 4px; display: none;
+  }
+  #linkBox textarea {
+    width: 100%; height: 64px; resize: none;
+    background: var(--ui-surface-2); border: 1px solid var(--ui-border);
+    border-radius: 10px; color: var(--ui-text-dim); font-size: 11px;
+    padding: 10px; font-family: monospace; word-break: break-all;
+  }
+  .hint { font-size: 11px; color: var(--ui-text-dim); line-height: 1.5; margin-top: 6px; }
+
+  @media (max-width: 520px) {
+    #clockWrap { width: min(86vmin, 86vh); }
+  }
+</style>
+</head>
+<body>
+
+  <div id="stage">
+    <div id="clockWrap">
+      <svg id="analog" viewBox="0 0 200 200" aria-label="아날로그 시계">
+        <circle id="faceCircle" cx="100" cy="100" r="98" fill="none" stroke-width="2"/>
+        <g id="ticks"></g>
+        <g id="numerals"></g>
+        <g id="svgLogo"></g>
+        <line id="hHand" x1="100" y1="100" x2="100" y2="55" stroke-width="5" stroke-linecap="round"/>
+        <line id="mHand" x1="100" y1="100" x2="100" y2="32" stroke-width="3.5" stroke-linecap="round"/>
+        <line id="sHand" x1="100" y1="112" x2="100" y2="26" stroke-width="1.6" stroke-linecap="round"/>
+        <circle id="cap" cx="100" cy="100" r="4.5"/>
+      </svg>
+
+      <div id="digital">
+        <div class="digiLogo" id="digiLogo"></div>
+        <div id="digTime">00:00</div>
+        <div id="digDate"></div>
+        <div id="digTitle"></div>
+      </div>
+    </div>
+  </div>
+
+  <button class="fab" id="fsBtn" title="전체화면" aria-label="전체화면">⛶</button>
+  <button class="fab" id="openPanel" title="설정" aria-label="설정">⚙</button>
+
+  <!-- ===== 편집 패널 ===== -->
+  <aside id="panel">
+    <div class="panelHead">
+      <div>
+        <h1>시계 설정</h1>
+        <div class="sub">디자인하고 링크로 공유하세요</div>
+      </div>
+      <button class="fab" id="closePanel" style="position:static;width:34px;height:34px;font-size:16px;" aria-label="닫기">✕</button>
+    </div>
+
+    <div class="panelBody">
+
+      <div class="group">
+        <span class="label">시계 종류</span>
+        <div class="seg" id="typeSeg">
+          <button data-type="analog" class="active">아날로그</button>
+          <button data-type="digital">디지털</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <span class="label">테마 프리셋</span>
+        <div class="themeRow" id="presetRow"></div>
+      </div>
+
+      <div class="group">
+        <span class="label">색상</span>
+        <div class="colorRow"><span>배경</span><input type="color" id="cBg" value="#0e0e12"></div>
+        <div class="colorRow"><span>시계판 테두리</span><input type="color" id="cFace" value="#3a3a4a"></div>
+        <div class="colorRow"><span>눈금 / 숫자</span><input type="color" id="cTick" value="#9a9aa8"></div>
+        <div class="colorRow"><span>시·분침</span><input type="color" id="cHand" value="#ededf2"></div>
+        <div class="colorRow"><span>초침 / 강조</span><input type="color" id="cAccent" value="#6c63ff"></div>
+        <div class="colorRow"><span>텍스트(디지털)</span><input type="color" id="cText" value="#ededf2"></div>
+      </div>
+
+      <div class="group">
+        <span class="label">중앙 로고</span>
+        <div class="field">
+          <div class="seg" id="logoSeg" style="margin-bottom:10px;">
+            <button data-logo="none" class="active">없음</button>
+            <button data-logo="text">텍스트</button>
+            <button data-logo="url">URL</button>
+            <button data-logo="image">업로드</button>
+          </div>
+        </div>
+        <div class="field logoInput" data-for="text" style="display:none;">
+          <input type="text" id="logoTextVal" placeholder="예: AG  또는  🕒" maxlength="12">
+        </div>
+        <div class="field logoInput" data-for="url" style="display:none;">
+          <input type="text" id="logoUrlVal" placeholder="https://example.com/logo.png">
+        </div>
+        <div class="field logoInput" data-for="image" style="display:none;">
+          <label class="uploadBtn" for="logoFile">⬆ 이미지 파일 선택</label>
+          <input type="file" id="logoFile" accept="image/*" style="display:none;">
+          <div class="hint" id="imgHint"></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <span class="label">옵션</span>
+        <div class="field">
+          <label>제목 / 이름 (선택)</label>
+          <input type="text" id="titleVal" placeholder="예: 안티그래비티 본사" maxlength="40">
+        </div>
+        <div class="toggle"><span>초침 표시</span>
+          <label class="switch"><input type="checkbox" id="optSeconds" checked><span class="track"></span></label>
+        </div>
+        <div class="toggle"><span>날짜 표시</span>
+          <label class="switch"><input type="checkbox" id="optDate"><span class="track"></span></label>
+        </div>
+        <div class="toggle"><span>아날로그 숫자 표시</span>
+          <label class="switch"><input type="checkbox" id="optNumerals" checked><span class="track"></span></label>
+        </div>
+        <div class="toggle" id="row24"><span>24시간제 (디지털)</span>
+          <label class="switch"><input type="checkbox" id="opt24"><span class="track"></span></label>
+        </div>
+        <div class="field" style="margin-top:12px;">
+          <label>폰트 (디지털)</label>
+          <select id="digFont">
+            <option value="-apple-system, 'Pretendard', sans-serif">기본 (산세리프)</option>
+            <option value="'Courier New', monospace">모노스페이스</option>
+            <option value="Georgia, 'Times New Roman', serif">세리프</option>
+            <option value="'Arial Black', sans-serif">두꺼운 산세리프</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>타임존</label>
+          <select id="tzVal"></select>
+        </div>
+      </div>
+
+      <div class="group">
+        <span class="label">공유</span>
+        <div class="actions">
+          <button class="btn primary" id="makeLink">🔗 고유 링크 생성 &amp; 복사</button>
+          <button class="btn ghost" id="enterFs">⛶ 전체화면으로 보기</button>
+        </div>
+        <div id="linkBox">
+          <textarea id="linkText" readonly></textarea>
+          <div class="hint">이 링크를 열면 위에서 디자인한 시계가 그대로 복원됩니다. 정적 호스팅(Vercel 등)에 올린 뒤 링크를 공유하세요.</div>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <div id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- 기본 설정값 ----------
+  var DEFAULT = {
+    type: "analog",
+    colors: { bg: "#0e0e12", face: "#3a3a4a", tick: "#9a9aa8", hand: "#ededf2", accent: "#6c63ff", text: "#ededf2" },
+    logo: { kind: "none", value: "" },
+    seconds: true,
+    date: false,
+    numerals: true,
+    h24: false,
+    font: "-apple-system, 'Pretendard', sans-serif",
+    tz: "local",
+    title: ""
+  };
+
+  var cfg = JSON.parse(JSON.stringify(DEFAULT));
+
+  // ---------- 테마 프리셋 ----------
+  var PRESETS = [
+    { name: "다크", bg:"#0e0e12", face:"#3a3a4a", tick:"#9a9aa8", hand:"#ededf2", accent:"#6c63ff", text:"#ededf2" },
+    { name: "라이트", bg:"#f5f5f7", face:"#c9c9d1", tick:"#6b6b78", hand:"#1a1a22", accent:"#e2453c", text:"#1a1a22" },
+    { name: "미드나잇", bg:"#0a1929", face:"#1c4566", tick:"#5b89b3", hand:"#e8f1ff", accent:"#36c2ff", text:"#e8f1ff" },
+    { name: "포레스트", bg:"#10231a", face:"#2c5440", tick:"#6fae8c", hand:"#eafff3", accent:"#2dd47f", text:"#eafff3" },
+    { name: "선셋", bg:"#1a0f14", face:"#56242f", tick:"#c97a8c", hand:"#fff0f3", accent:"#ff6f91", text:"#fff0f3" },
+    { name: "모노", bg:"#161616", face:"#444", tick:"#888", hand:"#fafafa", accent:"#fafafa", text:"#fafafa" },
+    { name: "골드", bg:"#15130d", face:"#6b5a2c", tick:"#c2a45a", hand:"#fff7e0", accent:"#ffcb47", text:"#fff7e0" }
+  ];
+
+  // ---------- DOM ----------
+  var $ = function (id) { return document.getElementById(id); };
+  var stage = $("stage"), analog = $("analog"), digital = $("digital");
+  var svgLogo = $("svgLogo"), digiLogo = $("digiLogo");
+  var hHand = $("hHand"), mHand = $("mHand"), sHand = $("sHand");
+  var faceCircle = $("faceCircle"), cap = $("cap"), ticks = $("ticks"), numerals = $("numerals");
+  var digTime = $("digTime"), digDate = $("digDate"), digTitle = $("digTitle");
+  var panel = $("panel");
+
+  // ---------- 안전한 base64 (유니코드) ----------
+  function encodeCfg(o) {
+    var json = JSON.stringify(o);
+    var b64 = btoa(unescape(encodeURIComponent(json)));
+    return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  function decodeCfg(s) {
+    try {
+      s = s.replace(/-/g, "+").replace(/_/g, "/");
+      while (s.length % 4) s += "=";
+      return JSON.parse(decodeURIComponent(escape(atob(s))));
+    } catch (e) { return null; }
+  }
+
+  // ---------- 눈금 / 숫자 그리기 ----------
+  function buildTicks() {
+    var t = "", n = "";
+    for (var i = 0; i < 60; i++) {
+      var ang = i * 6 * Math.PI / 180;
+      var isHour = i % 5 === 0;
+      var r1 = isHour ? 82 : 86, r2 = 90;
+      var x1 = 100 + r1 * Math.sin(ang), y1 = 100 - r1 * Math.cos(ang);
+      var x2 = 100 + r2 * Math.sin(ang), y2 = 100 - r2 * Math.cos(ang);
+      t += '<line x1="'+x1.toFixed(2)+'" y1="'+y1.toFixed(2)+'" x2="'+x2.toFixed(2)+'" y2="'+y2.toFixed(2)+'" stroke-width="'+(isHour?2.2:1)+'" />';
+    }
+    ticks.innerHTML = t;
+    for (var h = 1; h <= 12; h++) {
+      var a = h * 30 * Math.PI / 180, r = 70;
+      var x = 100 + r * Math.sin(a), y = 100 - r * Math.cos(a) + 4.5;
+      n += '<text x="'+x.toFixed(2)+'" y="'+y.toFixed(2)+'" text-anchor="middle" font-size="13" font-weight="600" font-family="sans-serif">'+h+'</text>';
+    }
+    numerals.innerHTML = n;
+  }
+  buildTicks();
+
+  // ---------- 색상 적용 ----------
+  function applyColors() {
+    var c = cfg.colors;
+    stage.style.background = c.bg;
+    document.body.style.background = c.bg;
+    faceCircle.setAttribute("stroke", c.face);
+    cap.setAttribute("fill", c.accent);
+    hHand.setAttribute("stroke", c.hand);
+    mHand.setAttribute("stroke", c.hand);
+    sHand.setAttribute("stroke", c.accent);
+    ticks.querySelectorAll("line").forEach(function (l) { l.setAttribute("stroke", c.tick); });
+    numerals.querySelectorAll("text").forEach(function (t) { t.setAttribute("fill", c.tick); });
+    digTime.style.color = c.text;
+    digDate.style.color = c.text;
+    digTitle.style.color = c.text;
+  }
+
+  // ---------- 로고 적용 ----------
+  // 아날로그: 바늘 뒤(SVG 내부), 중심에서 위쪽(워치 다이얼 스타일)에 배치
+  function applyLogo() {
+    var L = cfg.logo, c = cfg.colors;
+    svgLogo.innerHTML = "";
+    digiLogo.style.display = "none";
+    digiLogo.innerHTML = "";
+    if (L.kind === "none" || !L.value) return;
+
+    if (cfg.type === "analog") {
+      // 로고 중심 좌표: 가로 중앙(100), 세로는 중심(100)에서 위로 — 12시 방향 영역
+      var cx = 100, cy = 62;
+      if (L.kind === "text") {
+        svgLogo.innerHTML =
+          '<text x="'+cx+'" y="'+(cy+5)+'" text-anchor="middle" font-size="13" ' +
+          'font-weight="700" font-family="sans-serif" fill="'+c.hand+'" opacity="0.92">' +
+          escapeHtml(L.value) + '</text>';
+      } else { // url / image
+        var w = 52, h = 36;
+        svgLogo.innerHTML =
+          '<image href="'+escapeAttr(L.value)+'" x="'+(cx - w/2)+'" y="'+(cy - h/2)+'" ' +
+          'width="'+w+'" height="'+h+'" preserveAspectRatio="xMidYMid meet" opacity="0.95" />';
+      }
+    } else {
+      if (L.kind === "text") {
+        digiLogo.innerHTML = '<div class="digiLogoText" style="color:'+c.text+';font-size:7vmin;">'+escapeHtml(L.value)+'</div>';
+      } else {
+        digiLogo.innerHTML = '<img src="'+escapeAttr(L.value)+'" alt="로고" />';
+      }
+      digiLogo.style.display = "block";
+    }
+  }
+  function escapeHtml(s){return String(s).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
+  function escapeAttr(s){return String(s).replace(/"/g,"&quot;");}
+
+  // ---------- 표시 모드 적용 ----------
+  function applyType() {
+    if (cfg.type === "analog") {
+      analog.style.display = "block";
+      digital.style.display = "none";
+    } else {
+      analog.style.display = "none";
+      digital.style.display = "flex";
+    }
+    numerals.style.display = cfg.numerals ? "" : "none";
+    sHand.style.display = cfg.seconds ? "" : "none";
+    digTime.style.fontFamily = cfg.font;
+    digDate.style.display = cfg.date ? "" : "none";
+    digTitle.style.display = cfg.title ? "" : "none";
+    digTitle.textContent = cfg.title || "";
+  }
+
+  // ---------- 현재 시각 ----------
+  function nowParts() {
+    var d = new Date();
+    if (cfg.tz && cfg.tz !== "local") {
+      try {
+        var s = d.toLocaleString("en-US", { timeZone: cfg.tz });
+        d = new Date(s);
+      } catch (e) {}
+    }
+    return d;
+  }
+
+  var prevSec = -1;
+  function tick() {
+    var d = nowParts();
+    var h = d.getHours(), m = d.getMinutes(), s = d.getSeconds(), ms = d.getMilliseconds();
+
+    if (cfg.type === "analog") {
+      var secAng = (cfg.seconds ? (s + ms / 1000) : s) * 6;
+      var minAng = m * 6 + s * 0.1;
+      var hrAng = (h % 12) * 30 + m * 0.5;
+      hHand.setAttribute("transform", "rotate(" + hrAng + " 100 100)");
+      mHand.setAttribute("transform", "rotate(" + minAng + " 100 100)");
+      if (cfg.seconds) sHand.setAttribute("transform", "rotate(" + secAng + " 100 100)");
+    } else {
+      var hh = h, ap = "";
+      if (!cfg.h24) {
+        ap = h < 12 ? " AM" : " PM";
+        hh = h % 12; if (hh === 0) hh = 12;
+      }
+      var str = pad(hh) + ":" + pad(m);
+      if (cfg.seconds) str += ":" + pad(s);
+      digTime.textContent = str + ap;
+      if (cfg.date && s !== prevSec) {
+        digDate.textContent = formatDate(d);
+      }
+    }
+    prevSec = s;
+    requestAnimationFrame(tick);
+  }
+  function pad(n){ return n < 10 ? "0" + n : "" + n; }
+  function formatDate(d){
+    var days = ["일","월","화","수","목","금","토"];
+    return d.getFullYear() + "년 " + (d.getMonth()+1) + "월 " + d.getDate() + "일 (" + days[d.getDay()] + ")";
+  }
+
+  function applyAll() { applyColors(); applyType(); applyLogo(); }
+
+  // ================= 편집 UI =================
+  function syncUIFromCfg() {
+    setSeg("typeSeg", "type", cfg.type);
+    $("cBg").value = cfg.colors.bg;
+    $("cFace").value = cfg.colors.face;
+    $("cTick").value = cfg.colors.tick;
+    $("cHand").value = cfg.colors.hand;
+    $("cAccent").value = cfg.colors.accent;
+    $("cText").value = cfg.colors.text;
+    setSeg("logoSeg", "logo", cfg.logo.kind);
+    showLogoInput(cfg.logo.kind);
+    if (cfg.logo.kind === "text") $("logoTextVal").value = cfg.logo.value;
+    if (cfg.logo.kind === "url") $("logoUrlVal").value = cfg.logo.value;
+    $("titleVal").value = cfg.title;
+    $("optSeconds").checked = cfg.seconds;
+    $("optDate").checked = cfg.date;
+    $("optNumerals").checked = cfg.numerals;
+    $("opt24").checked = cfg.h24;
+    $("digFont").value = cfg.font;
+    $("tzVal").value = cfg.tz;
+  }
+  function setSeg(segId, attr, val) {
+    $(segId).querySelectorAll("button").forEach(function (b) {
+      b.classList.toggle("active", b.getAttribute("data-" + attr) === val);
+    });
+  }
+  function showLogoInput(kind) {
+    document.querySelectorAll(".logoInput").forEach(function (el) {
+      el.style.display = el.getAttribute("data-for") === kind ? "" : "none";
+    });
+  }
+
+  // 프리셋 버튼 생성
+  (function () {
+    var row = $("presetRow");
+    PRESETS.forEach(function (p) {
+      var b = document.createElement("button");
+      b.className = "swatch";
+      b.title = p.name;
+      b.style.background = p.bg;
+      b.style.borderColor = p.accent;
+      b.style.boxShadow = "inset 0 0 0 4px " + p.accent + "22";
+      b.addEventListener("click", function () {
+        cfg.colors = { bg:p.bg, face:p.face, tick:p.tick, hand:p.hand, accent:p.accent, text:p.text };
+        syncUIFromCfg(); applyAll();
+      });
+      row.appendChild(b);
+    });
+  })();
+
+  // 타임존 목록
+  (function () {
+    var sel = $("tzVal");
+    var zones = [
+      ["local","기기 시간 (자동)"],
+      ["Asia/Seoul","서울 (KST)"],
+      ["Asia/Tokyo","도쿄"],
+      ["Asia/Shanghai","상하이/베이징"],
+      ["Asia/Singapore","싱가포르"],
+      ["Europe/London","런던"],
+      ["Europe/Paris","파리/베를린"],
+      ["America/New_York","뉴욕"],
+      ["America/Los_Angeles","로스앤젤레스"],
+      ["America/Chicago","시카고"],
+      ["Australia/Sydney","시드니"],
+      ["UTC","UTC"]
+    ];
+    zones.forEach(function (z) {
+      var o = document.createElement("option");
+      o.value = z[0]; o.textContent = z[1]; sel.appendChild(o);
+    });
+  })();
+
+  // 이벤트 바인딩
+  $("typeSeg").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    cfg.type = b.getAttribute("data-type"); setSeg("typeSeg","type",cfg.type); applyAll();
+  });
+  $("logoSeg").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    var kind = b.getAttribute("data-logo");
+    cfg.logo.kind = kind;
+    if (kind === "text") cfg.logo.value = $("logoTextVal").value;
+    else if (kind === "url") cfg.logo.value = $("logoUrlVal").value;
+    else if (kind === "none") cfg.logo.value = "";
+    setSeg("logoSeg","logo",kind); showLogoInput(kind); applyLogo();
+  });
+  $("logoTextVal").addEventListener("input", function () { cfg.logo.value = this.value; applyLogo(); });
+  $("logoUrlVal").addEventListener("input", function () { cfg.logo.value = this.value.trim(); applyLogo(); });
+  $("logoFile").addEventListener("change", function () {
+    var f = this.files[0]; if (!f) return;
+    if (f.size > 700 * 1024) { toast("이미지가 너무 큽니다 (700KB 이하 권장)"); }
+    var r = new FileReader();
+    r.onload = function () {
+      cfg.logo.kind = "image"; cfg.logo.value = r.result;
+      $("imgHint").textContent = "✓ " + f.name + " (" + Math.round(f.size/1024) + "KB)";
+      applyLogo();
+    };
+    r.readAsDataURL(f);
+  });
+
+  function bindColor(id, key) {
+    $(id).addEventListener("input", function () { cfg.colors[key] = this.value; applyColors(); applyLogo(); });
+  }
+  bindColor("cBg","bg"); bindColor("cFace","face"); bindColor("cTick","tick");
+  bindColor("cHand","hand"); bindColor("cAccent","accent"); bindColor("cText","text");
+
+  $("titleVal").addEventListener("input", function () { cfg.title = this.value; applyType(); });
+  $("optSeconds").addEventListener("change", function () { cfg.seconds = this.checked; applyType(); });
+  $("optDate").addEventListener("change", function () { cfg.date = this.checked; applyType(); });
+  $("optNumerals").addEventListener("change", function () { cfg.numerals = this.checked; applyType(); });
+  $("opt24").addEventListener("change", function () { cfg.h24 = this.checked; });
+  $("digFont").addEventListener("change", function () { cfg.font = this.value; applyType(); });
+  $("tzVal").addEventListener("change", function () { cfg.tz = this.value; });
+
+  // 패널 토글
+  $("openPanel").addEventListener("click", function () { panel.classList.remove("hidden"); });
+  $("closePanel").addEventListener("click", function () { panel.classList.add("hidden"); });
+
+  // 전체화면
+  function toggleFs() {
+    if (!document.fullscreenElement) {
+      (document.documentElement.requestFullscreen || function(){}).call(document.documentElement);
+    } else { document.exitFullscreen(); }
+  }
+  $("fsBtn").addEventListener("click", toggleFs);
+  $("enterFs").addEventListener("click", function () { panel.classList.add("hidden"); toggleFs(); });
+
+  // 링크 생성
+  $("makeLink").addEventListener("click", function () {
+    var url = location.origin + location.pathname + "#c=" + encodeCfg(cfg);
+    var box = $("linkBox"), ta = $("linkText");
+    box.style.display = "block"; ta.value = url;
+    ta.select();
+    var done = false;
+    try {
+      navigator.clipboard.writeText(url).then(function () { toast("링크가 복사되었습니다"); }, function(){ fallbackCopy(ta); });
+      done = true;
+    } catch (e) {}
+    if (!done) fallbackCopy(ta);
+    // URL 해시도 갱신 (새로고침해도 유지)
+    history.replaceState(null, "", "#c=" + encodeCfg(cfg));
+    if (url.length > 1900) toast("링크가 깁니다 — 업로드 이미지 대신 URL 사용을 권장합니다");
+  });
+  function fallbackCopy(ta) {
+    ta.select(); try { document.execCommand("copy"); toast("링크가 복사되었습니다"); } catch (e) { toast("복사 실패 — 직접 선택해 복사하세요"); }
+  }
+
+  // 토스트
+  var toastTimer;
+  function toast(msg) {
+    var t = $("toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2200);
+  }
+
+  // ---------- 자동 숨김 (시계 모드에서 컨트롤 페이드) ----------
+  var hideTimer;
+  function scheduleHide() {
+    clearTimeout(hideTimer);
+    $("openPanel").classList.remove("faded");
+    $("fsBtn").classList.remove("faded");
+    hideTimer = setTimeout(function () {
+      if (panel.classList.contains("hidden")) {
+        $("openPanel").classList.add("faded");
+        $("fsBtn").classList.add("faded");
+      }
+    }, 3000);
+  }
+  ["mousemove","touchstart","click"].forEach(function (ev) {
+    document.addEventListener(ev, scheduleHide, { passive: true });
+  });
+
+  // ================= 초기화 =================
+  function init() {
+    var hash = location.hash || "";
+    var m = hash.match(/c=([^&]+)/);
+    var shared = false;
+    if (m) {
+      var loaded = decodeCfg(m[1]);
+      if (loaded) {
+        cfg = Object.assign(JSON.parse(JSON.stringify(DEFAULT)), loaded);
+        cfg.colors = Object.assign({}, DEFAULT.colors, loaded.colors || {});
+        cfg.logo = Object.assign({}, DEFAULT.logo, loaded.logo || {});
+        shared = true;
+      }
+    }
+    syncUIFromCfg();
+    applyAll();
+    if (shared) {
+      // 공유 링크로 열렸으면 시계만 보여주기
+      panel.classList.add("hidden");
+      scheduleHide();
+    }
+    tick();
+  }
+  init();
+
+})();
+</script>
+</body>
+</html>
