@@ -91,12 +91,12 @@ export function useClockConfig() {
   }, []);
 
   const encodeToUrl = useCallback(
-    () => `${location.origin}${location.pathname}#c=${encodeCfg(config)}`,
+    () => `${location.origin}/#c=${encodeCfg(config)}`,
     [config],
   );
 
   const pushToHash = useCallback(() => {
-    history.replaceState(null, '', `#c=${encodeCfg(config)}`);
+    history.replaceState(null, '', `/#c=${encodeCfg(config)}`);
   }, [config]);
 
   return {

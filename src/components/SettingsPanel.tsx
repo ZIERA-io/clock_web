@@ -88,12 +88,12 @@ export function SettingsPanel({
   function handleSlugInput(val: string) {
     const lower = val.toLowerCase().replace(/[^a-z0-9-]/g, '');
     setSlugInput(lower);
-    setSlugError(validateSlug(lower));
+    setSlugError(validateSlug(lower, t));
     checkSlug(lower);
   }
 
   async function handleSaveLink() {
-    const err = validateSlug(slugInput);
+    const err = validateSlug(slugInput, t);
     if (err) { setSlugError(err); return; }
     try {
       const url = await saveLink(slugInput, config, user);
@@ -508,7 +508,7 @@ export function SettingsPanel({
                   <button
                     className="btn primary sm"
                     onClick={handleSaveLink}
-                    disabled={saving || !!validateSlug(slugInput) || available === false}
+                    disabled={saving || !!validateSlug(slugInput, t) || available === false}
                     style={{ flexShrink: 0 }}
                   >
                     {saving ? '…' : savedSlug === slugInput ? t.update : t.save}

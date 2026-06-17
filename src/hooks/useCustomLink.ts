@@ -2,14 +2,17 @@ import { useState, useCallback, useRef } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import type { ClockConfig } from '../types';
+import type { T as TType } from '../i18n';
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/;
 
-export function validateSlug(slug: string): string | null {
-  if (!slug) return '링크 이름을 입력하세요';
-  if (slug.length < 3) return '3자 이상 입력하세요';
-  if (slug.length > 50) return '50자 이하로 입력하세요';
-  if (!SLUG_RE.test(slug)) return '영소문자·숫자·하이픈만 사용 가능, 첫/끝 문자는 영숫자';
+type Translations = typeof TType[keyof typeof TType];
+
+export function validateSlug(slug: string, t?: Translations): string | null {
+  if (!slug) return t?.slugRequired ?? '링크 이름을 입력하세요';
+  if (slug.length < 3) return t?.slugTooShort ?? '3자 이상 입력하세요';
+  if (slug.length > 50) return t?.slugTooLong ?? '50자 이하로 입력하세요';
+  if (!SLUG_RE.test(slug)) return t?.slugInvalid ?? '영소문자·숫자·하이픈만 사용 가능, 첫/끝 문자는 영숫자';
   return null;
 }
 

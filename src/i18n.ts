@@ -66,6 +66,10 @@ const ko = {
   uploadTooBig: '이미지가 너무 큽니다 (700KB 이하 권장)',
   uploadFail: '이미지 업로드 실패',
   loading: '불러오는 중…',
+  slugRequired: '링크 이름을 입력하세요',
+  slugTooShort: '3자 이상 입력하세요',
+  slugTooLong: '50자 이하로 입력하세요',
+  slugInvalid: '영소문자·숫자·하이픈만 사용 가능, 첫/끝 문자는 영숫자',
 };
 
 const en: typeof ko = {
@@ -126,6 +130,10 @@ const en: typeof ko = {
   uploadTooBig: 'Image too large (700 KB or less recommended)',
   uploadFail: 'Image upload failed',
   loading: 'Loading…',
+  slugRequired: 'Please enter a link name',
+  slugTooShort: 'Must be at least 3 characters',
+  slugTooLong: 'Must be 50 characters or fewer',
+  slugInvalid: 'Lowercase letters, numbers, and hyphens only; must start and end with a letter or number',
 };
 
 const ja: typeof ko = {
@@ -186,6 +194,10 @@ const ja: typeof ko = {
   uploadTooBig: '画像が大きすぎます（700KB以下推奨）',
   uploadFail: '画像のアップロードに失敗しました',
   loading: '読み込み中…',
+  slugRequired: 'リンク名を入力してください',
+  slugTooShort: '3文字以上入力してください',
+  slugTooLong: '50文字以下にしてください',
+  slugInvalid: '小文字・数字・ハイフンのみ使用可能。最初と最後は英数字',
 };
 
 const zh: typeof ko = {
@@ -246,6 +258,10 @@ const zh: typeof ko = {
   uploadTooBig: '图片过大（建议700KB以下）',
   uploadFail: '图片上传失败',
   loading: '加载中…',
+  slugRequired: '请输入链接名称',
+  slugTooShort: '至少需要3个字符',
+  slugTooLong: '不能超过50个字符',
+  slugInvalid: '只能使用小写字母、数字和连字符，首尾必须是字母或数字',
 };
 
 export const T: Record<Lang, typeof ko> = { ko, en, ja, zh };
