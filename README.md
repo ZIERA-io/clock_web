@@ -1,109 +1,110 @@
-# Tempus
+<div align="center">
 
-**A configurable clock for displays, TV walls, and office screens.**
-Set up the look once, share it as a short link. No app to install, no account required.
+# 🕐 Tableclock
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/ZIERA-io/clock_web)
+**A customizable clock built for displays, TV walls, and office screens.**
+
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-tableclock.io-000?style=for-the-badge&logo=vercel)](https://tableclock.io)
 &nbsp;
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/ZIERA-io/Tableclock)
+
 ![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?logo=supabase&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-000?logo=vercel&logoColor=white)
+
+</div>
 
 ---
 
-## What it does
+Design your clock, share it as a link. No app, no account, no fuss — everything lives in the URL.
 
-Tempus is a browser clock you can customize in under a minute and share as a URL. Everything — colors, face style, logo, timezone — is encoded in the link, so anyone who opens it sees exactly what you set up.
-
-When connected to Supabase, uploaded logos are stored server-side and the link shortens to something like `https://tableclock.io/studio`.
+Connect Supabase to get short links like `tableclock.io/studio` and server-hosted logo uploads.
 
 ---
 
 ## Features
 
-**Clock**
-- Analog and digital modes
-- Five analog face styles — Classic, Minimal, Modern, Retro, Sport
-- Adjustable clock size (40–130%)
-- Timezone selection, 24h toggle, seconds and date display
+### 🕰️ Clock
+| | |
+|---|---|
+| **Modes** | Analog and digital |
+| **Analog styles** | Classic · Minimal · Modern · Retro · Sport |
+| **Clock size** | 40–130% adjustable |
+| **Time options** | Timezone, 24h mode, seconds, date display |
 
-**Appearance**
-- 12 color theme presets
-- Six individually adjustable color slots (background, face, ticks, hands, accent, text)
-- Center logo: text/emoji, image URL, or file upload
-- 9 font choices for the digital face
+### 🎨 Appearance
+| | |
+|---|---|
+| **Themes** | 12 presets ready to use |
+| **Colors** | 6 slots — background, face, ticks, hands, accent, text |
+| **Logo** | Text/emoji, image URL, or file upload |
+| **Digital fonts** | 9 choices |
 
-**Sharing**
-- Every setting encodes into a URL hash — works without a backend
+### 🔗 Sharing
+- All settings encode into a URL hash — works with zero backend
 - Short links (`tableclock.io/your-name`) when Supabase is connected
-- Uploaded logos stored in Supabase Storage and served by URL, not embedded in the link
+- Uploaded logos stored in Supabase Storage, served by URL
 
-**UI / Language**
-- Interface available in Korean, English, Japanese, and Chinese
+### 🌐 UI & Language
+- Korean · English · Japanese · Chinese
 - Controls auto-fade after 3 seconds of inactivity
 
-**Built for displays and TV walls**
-- Wake Lock API keeps the screen on without a screensaver
-- Full-screen mode (native Fullscreen API)
-- Controls fade out when idle — nothing competes with the clock on a lobby screen
+### 📺 Built for TV & Displays
+- **Wake Lock API** — screen stays on, no screensaver needed
+- **Native Fullscreen API** — one button to fill any display
+- Clean idle state — the clock is the only thing on screen
 
 ---
 
-## Getting started
+## Getting Started
 
 ```bash
-git clone https://github.com/ZIERA-io/clock_web.git
-cd clock_web
+git clone https://github.com/ZIERA-io/Tableclock.git
+cd Tableclock
 npm install
 npm run dev
 ```
 
-Open http://localhost:5173. Click anywhere on the clock to open the settings panel.
-
-## Build
+Open [http://localhost:5173](http://localhost:5173) and click anywhere on the clock to open settings.
 
 ```bash
-npm run build
+npm run build   # output → dist/
 ```
-
-Output goes to `dist/`.
 
 ---
 
-## Short links (optional)
+## Short Links (Optional)
 
-Without Supabase, sharing works via URL hash — the link is self-contained but gets long when images are uploaded. To enable short links and server-side logo storage, connect a Supabase project.
+Without Supabase, sharing works fine via URL hash. Connect Supabase when you want short links and server-stored logos.
 
-**1. Create a Supabase project** at https://supabase.com
+**1. Create a project** at [supabase.com](https://supabase.com)
 
-**2. Add credentials to `.env`:**
-
+**2. Create `.env`:**
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-**3. Run the SQL schema** in the Supabase SQL editor (see `.env.example`)
+**3. Run the SQL schema** in the Supabase SQL Editor (see [`.env.example`](.env.example))
 
-**4. Create a `logos` storage bucket** (public) with INSERT policy `true`
+**4. Create a `logos` storage bucket** — Public, INSERT policy `true`
 
-Once set up:
-- Type a name in the **Link Name** field (e.g. `studio`)
-- Click **Save** — the link becomes `https://tableclock.io/studio`
-- Duplicate names are rejected with an error
-- Links created without an account cannot be updated later
+Once connected:
+- Type a name in **Link Name** (e.g. `studio`)
+- Click **Save** → link becomes `https://tableclock.io/studio`
+- Duplicate names are rejected; anonymous links cannot be edited later
 
 ---
 
 ## Deployment
 
-`vercel.json` handles SPA routing so short links resolve correctly in production.
-
 ```bash
 npx vercel --prod
 ```
 
-Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the Vercel project environment variables if using short links.
+`vercel.json` handles SPA routing for short links. Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to your Vercel project environment variables.
 
 ---
 
@@ -112,18 +113,40 @@ Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the Vercel project envir
 | Layer | Tech |
 |---|---|
 | Frontend | Vite · React 18 · TypeScript |
-| Clock rendering | SVG + `requestAnimationFrame` (no re-renders at 60 fps) |
+| Clock rendering | SVG + `requestAnimationFrame` (60 fps, no React re-renders) |
 | Backend (optional) | Supabase (Postgres + Storage) |
 | Hosting | Vercel |
 | Analytics | Vercel Analytics |
 
 ---
 
-## Contributing
+## Contributors
 
-Frontend work goes through the `Hael-o` account; backend and infra through `sera03`. Both are members of the [ZIERA-io](https://github.com/ZIERA-io) org.
-
-Pull requests are welcome. For larger changes, open an issue first.
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/Hael-o">
+        <img src="https://avatars.githubusercontent.com/Hael-o?v=4" width="80px" alt="Hael-o" style="border-radius:50%"/><br/>
+        <sub><b>Hael-o</b></sub>
+      </a><br/>
+      Frontend
+    </td>
+    <td align="center">
+      <a href="https://github.com/sera03">
+        <img src="https://avatars.githubusercontent.com/sera03?v=4" width="80px" alt="sera03" style="border-radius:50%"/><br/>
+        <sub><b>sera03</b></sub>
+      </a><br/>
+      Backend
+    </td>
+    <td align="center">
+      <a href="https://github.com/Dev-minu">
+        <img src="https://avatars.githubusercontent.com/Dev-minu?v=4" width="80px" alt="Dev-minu" style="border-radius:50%"/><br/>
+        <sub><b>Dev-minu</b></sub>
+      </a><br/>
+      Design & Direction
+    </td>
+  </tr>
+</table>
 
 ---
 
